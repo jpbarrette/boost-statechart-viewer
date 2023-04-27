@@ -19,7 +19,7 @@ endif
 all: visualizer.so boost-statechart-viewer
 
 visualizer.so: visualizer.cpp
-	$(CXX) -g -fno-rtti -shared -Wall $(CLANG_LIBS) $(LLVM_FLAGS) -o $@ $<
+	$(CXX) -g -fPIC -fno-rtti -shared -Wall $(CLANG_LIBS) $(LLVM_FLAGS) -o $@ $<
 
 boost-statechart-viewer: boost-statechart-viewer.sh
 	sed -e s,@libdir@,$(LIBDIR), $< > $@

@@ -20,11 +20,8 @@ VISUALIZER = -Xclang -load -Xclang ../src/visualizer.so -Xclang -plugin -Xclang 
 %.o %.dot: %.cpp ../src/visualizer.so
 	$(CLANG++) $(VISUALIZER) $(CXXFLAGS) -c -o $(<:.cpp=.o) $<
 
-%.eps: %.dot
-	dot -Tps $< > $@
-
-%.pdf: %.eps
-	epstopdf $< > $@
+%.pdf: %.dot
+	dot -Tpdf $< > $@
 
 ../src/visualizer:
 	$(MAKE) -C ../src

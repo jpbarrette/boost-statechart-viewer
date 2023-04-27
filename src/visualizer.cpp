@@ -270,16 +270,16 @@ public:
 	if (E->getMemberNameInfo().getAsString() == "defer_event") {
 		CXXRecordDecl *Event = EventType->getAsCXXRecordDecl();
 
-		Model::State *s = model.findState(SrcState->getName());
+		Model::State *s = model.findState(SrcState->getName().str());
 		assert(s);
-		s->addDeferredEvent(Event->getName());
+		s->addDeferredEvent(Event->getName().str());
 	} else if (E->getMemberNameInfo().getAsString() != "transit")
 	    return true;
 	if (E->hasExplicitTemplateArgs()) {
 	    const Type *DstStateType = E->getTemplateArgs()[0].getArgument().getAsType().getTypePtr();
 	    CXXRecordDecl *DstState = DstStateType->getAsCXXRecordDecl();
 	    CXXRecordDecl *Event = EventType->getAsCXXRecordDecl();
-	    Model::Transition *T = new Model::Transition(SrcState->getName(), DstState->getName(), Event->getName());
+	    Model::Transition *T = new Model::Transition(SrcState->getName().str(), DstState->getName().str(), Event->getName().str());
 	    model.transitions.push_back(T);
 	}
 	return true;
@@ -340,7 +340,7 @@ public:
 	for (DeclContext::lookup_result::iterator it = ReactRes.begin(), end=ReactRes.end(); it != end; ++it, ++i) {
 	    if (i >= reactMethodInReactions.size() || reactMethodInReactions[i] == false) {
 		CXXMethodDecl *React = dyn_cast<CXXMethodDecl>(*it);
-		Diag(React->getParamDecl(0)->getLocStart(), diag_warning)
+		Diag(React->getParamDecl(0)->getBeginLoc(), diag_warning)
 		    << React->getParamDecl(0)->getType().getAsString() << " missing in typedef reactions";
 	    }
 	}
@@ -367,7 +367,7 @@ public:
 			return true;
 		    }
 		} else
-		    Diag(React->getLocStart(), diag_warning)
+		    Diag(React->getBeginLoc(), diag_warning)
 			<< React << "has not a parameter";
 	    } else
 		Diag((*it)->getSourceRange().getBegin(), diag_warning)
@@ -391,7 +391,7 @@ public:
 		CXXRecordDecl *DstState = DstStateType->getAsCXXRecordDecl();
 		unusedEvents.remove_if(eventHasName(Event->getNameAsString()));
 
-		Model::Transition *T = new Model::Transition(SrcState->getName(), DstState->getName(), Event->getName());
+		Model::Transition *T = new Model::Transition(SrcState->getName().str(), DstState->getName().str(), Event->getName().str());
 		model.transitions.push_back(T);
 	    } else if (name == "boost::statechart::custom_reaction") {
 		const Type *EventType = TST->getArg(0).getAsType().getTypePtr();
@@ -404,9 +404,9 @@ public:
 		CXXRecordDecl *Event = EventType->getAsCXXRecordDecl();
 		unusedEvents.remove_if(eventHasName(Event->getNameAsString()));
 
-		Model::State *s = model.findState(SrcState->getName());
+		Model::State *s = model.findState(SrcState->getName().str());
 		assert(s);
-		s->addDeferredEvent(Event->getName());
+		s->addDeferredEvent(Event->getName().str());
 	    } else if (name == "boost::mpl::list") {
 		for (TemplateSpecializationType::iterator Arg = TST->begin(), End = TST->end(); Arg != End; ++Arg)
 		    HandleReaction(Arg->getAsType().getTypePtr(), Loc, SrcState);
@@ -415,9 +415,9 @@ public:
 		CXXRecordDecl *Event = EventType->getAsCXXRecordDecl();
 		unusedEvents.remove_if(eventHasName(Event->getNameAsString()));
 
-		Model::State *s = model.findState(SrcState->getName());
+		Model::State *s = model.findState(SrcState->getName().str());
 		assert(s);
-		s->addInStateEvent(Event->getName());
+		s->addInStateEvent(Event->getName().str());
 	      
 	    } else
 		Diag(Loc, diag_unhandled_reaction_type) << name;
@@ -429,7 +429,7 @@ public:
     {
 	if (const TypedefDecl *r = dyn_cast<TypedefDecl>(Decl))
 	    HandleReaction(r->getCanonicalDecl()->getUnderlyingType().getTypePtr(),
-			   r->getLocStart(), SrcState);
+			   r->getBeginLoc(), SrcState);
 	else
 	    Diag(Decl->getLocation(), diag_unhandled_reaction_decl) << Decl->getDeclKindName();
 	checkAllReactMethods(SrcState);
@@ -477,7 +477,7 @@ public:
     {
 	int typedef_num = 0;
 	string name(RecordDecl->getName()); //getQualifiedNameAsString());
-	Diag(RecordDecl->getLocStart(), diag_found_state) << name;
+	Diag(RecordDecl->getBeginLoc(), diag_found_state) << name;
 	reactMethodInReactions.clear();
 
 	Model::State *state;
@@ -488,9 +488,9 @@ public:
 
 	CXXRecordDecl *Context = getTemplateArgDeclOfBase(Base, 1);
 	if (Context) {
-	    Model::Context *c = model.findContext(Context->getName());
+	    Model::Context *c = model.findContext(Context->getName().str());
 	    if (!c) {
-		Model::State *s = new Model::State(Context->getName());
+		Model::State *s = new Model::State(Context->getName().str());
 		model.addUndefinedState(s);
 		c = s;
 	    }
@@ -502,7 +502,7 @@ public:
 	    static_cast<MyCXXRecordDecl*>(getTemplateArgDeclOfBase(Base, 2, Loc, true))) {
 	      if (InnerInitialState->isDerivedFrom("boost::statechart::simple_state") ||
 		InnerInitialState->isDerivedFrom("boost::statechart::state_machine")) {
-		  state->setInitialInnerState(InnerInitialState->getName());
+		  state->setInitialInnerState(InnerInitialState->getName().str());
 	    }
 	    else if (!InnerInitialState->getNameAsString().compare("boost::mpl::list<>"))
 	      Diag(Loc.getTypeSourceInfo()->getTypeLoc().getBeginLoc(), diag_warning)
@@ -519,7 +519,7 @@ public:
 	for (DeclContext::lookup_result::iterator it = Reactions.begin(), end = Reactions.end(); it != end; ++it, typedef_num++)
 	    HandleReaction(*it, RecordDecl);
 	if(typedef_num == 0) {
-	    Diag(RecordDecl->getLocStart(), diag_warning)
+	    Diag(RecordDecl->getBeginLoc(), diag_warning)
 		<< RecordDecl->getName() << "state has no typedef for reactions";
 	    state->setNoTypedef();
 	}
@@ -527,12 +527,12 @@ public:
 
     void handleStateMachine(CXXRecordDecl *RecordDecl, const CXXBaseSpecifier *Base)
     {
-	Model::Machine m(RecordDecl->getName());
-	Diag(RecordDecl->getLocStart(), diag_found_statemachine) << m.name;
+	Model::Machine m(RecordDecl->getName().str());
+	Diag(RecordDecl->getBeginLoc(), diag_found_statemachine) << m.name;
 
 	if (MyCXXRecordDecl *InitialState =
 	    static_cast<MyCXXRecordDecl*>(getTemplateArgDeclOfBase(Base, 1)))
-	    m.setInitialState(InitialState->getName());
+	    m.setInitialState(InitialState->getName().str());
 	model.add(m);
     }
 
@@ -589,9 +589,9 @@ class VisualizeStatechartAction : public PluginASTAction
 protected:
   std::unique_ptr<ASTConsumer> CreateASTConsumer(CompilerInstance &CI, llvm::StringRef) {
     size_t dot = getCurrentFile().find_last_of('.');
-    std::string dest = getCurrentFile().substr(0, dot);
+    std::string dest = getCurrentFile().str().substr(0, dot);
     dest.append(".dot");
-    return llvm::make_unique<VisualizeStatechartConsumer>(&CI.getASTContext(), dest, CI.getDiagnostics());
+    return std::make_unique<VisualizeStatechartConsumer>(&CI.getASTContext(), dest, CI.getDiagnostics());
   }
 
   bool ParseArgs(const CompilerInstance &CI,
